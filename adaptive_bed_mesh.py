@@ -338,7 +338,7 @@ class AdaptiveBedMesh(object):
                 for x_coord in reversed(horizontal_probe_points):
                     probe_coordinates.append((x_coord, y_coord))
 
-        relative_reference_index = round((num_horizontal_probes * num_vertical_probes) / 2)
+        relative_reference_index = int(round((num_horizontal_probes * num_vertical_probes) / 2))
 
         return (num_horizontal_probes, num_vertical_probes), probe_coordinates, relative_reference_index
 
