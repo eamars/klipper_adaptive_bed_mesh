@@ -94,12 +94,13 @@ class TestAdaptiveBedMesh(unittest.TestCase):
         mesh_min, mesh_max = self.adaptive_bed_mesh.apply_min_max_limit(mesh_min, mesh_max)
         print(f'({mesh_min}, {mesh_max})')
 
-        (num_horizontal_probes, num_vertical_probes), probe_points, zero_reference_position = self.adaptive_bed_mesh.get_probe_points(mesh_min, mesh_max)
-        print(num_horizontal_probes, num_vertical_probes)
+        (num_horizontal_probes, num_vertical_probes), probe_points, relative_reference_index = self.adaptive_bed_mesh.get_probe_points(mesh_min, mesh_max)
+        print(num_horizontal_probes, num_vertical_probes, relative_reference_index)
 
         probe_points_x, probe_points_y = zip(*probe_points)
         ax.plot(probe_points_x, probe_points_y, marker='x', linestyle='--', label='Probe points')
 
+        zero_reference_position = probe_points[relative_reference_index]
         ax.scatter(zero_reference_position[0], zero_reference_position[1], marker='o', label='Zero Reference Point')
 
         # Set equal scale

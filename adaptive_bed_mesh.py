@@ -16,6 +16,7 @@ class AdaptiveBedMesh(object):
         self.mesh_area_clearance = config.getfloat('mesh_area_clearance', 5)
         self.max_probe_horizontal_distance = config.getfloat('max_probe_horizontal_distance', 50)
         self.max_probe_vertical_distance = config.getfloat('max_probe_vertical_distance', 50)
+        self.use_relative_reference_index = config.getboolean('use_relative_reference_index', False)
         self.debug_mode = config.getboolean('debug_mode', False)
 
         # Some constants
@@ -87,13 +88,19 @@ class AdaptiveBedMesh(object):
         mesh_min, mesh_max = self.apply_min_max_limit(mesh_min, mesh_max)
 
         # Generate mesh min and max
-        (num_horizontal_probes, num_vertical_probes), probe_points, zero_reference_position = self.get_probe_points(mesh_min, mesh_max)
+        (num_horizontal_probes, num_vertical_probes), probe_points, relative_reference_index = self.get_probe_points(mesh_min, mesh_max)
 
-        self.bed_mesh.zero_ref_pos = zero_reference_position
+        zero_reference_position = probe_points[relative_reference_index]
+
         params = "MESH_MIN={x_min},{y_min} MESH_MAX={x_max},{y_max} PROBE_COUNT={x_counts},{y_counts}".format(
             x_min=mesh_min[0], y_min=mesh_min[1], x_max=mesh_max[0], y_max=mesh_max[1],
             x_counts=num_horizontal_probes, y_counts=num_vertical_probes
         )
+
+        if self.use_relative_reference_index:
+            params += ' relative_reference_index={}'.format(relative_reference_index)
+        else:
+            self.bed_mesh.zero_ref_pos = zero_reference_position
 
         return params
 
@@ -331,9 +338,9 @@ class AdaptiveBedMesh(object):
                 for x_coord in reversed(horizontal_probe_points):
                     probe_coordinates.append((x_coord, y_coord))
 
-        zero_reference_point_index = 0
+        relative_reference_index = round((num_horizontal_probes * num_vertical_probes) / 2)
 
-        return (num_horizontal_probes, num_vertical_probes), probe_coordinates, probe_coordinates[zero_reference_point_index]
+        return (num_horizontal_probes, num_vertical_probes), probe_coordinates, relative_reference_index
 
 
 def is_even(number):
