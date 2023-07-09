@@ -2,7 +2,7 @@ import unittest
 from unittest import mock
 from adaptive_bed_mesh import AdaptiveBedMesh
 import os
-
+import glob
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 test_data_dir = os.path.join(dir_path, 'test_data')
@@ -12,15 +12,16 @@ class TestAdaptiveBedMesh(unittest.TestCase):
     def setUp(self) -> None:
         self.mocked_config = mock.MagicMock()
         self.mocked_config.getsection.side_effect = self.mocked_get_section
-        self.mocked_config.getfloat = self.mocked_get_float
+        self.mocked_config.getfloat.side_effect = self.mocked_get_float
+        self.mocked_config.getint.side_effect = self.mocked_get_float
 
         self.adaptive_bed_mesh = AdaptiveBedMesh(self.mocked_config)
 
     def mocked_getfloatlist(self, name, count):
         if name == 'mesh_min':
-            return 20, 20
+            return 0, 0
         elif name == 'mesh_max':
-            return 100, 100
+            return 350, 350
 
     def mocked_get_section(self, name):
         if name == 'bed_mesh':
@@ -40,24 +41,29 @@ class TestAdaptiveBedMesh(unittest.TestCase):
         self.assertTupleEqual(mesh_max, (83.3972, 97.0602))
 
     def test_generate_bed_mesh_param_with_gcode_analysis(self):
-        gcode_file = os.path.join(test_data_dir, '2x_3d_benchy.gcode')
-        mesh_min, mesh_max = self.adaptive_bed_mesh.generate_mesh_with_gcode_analysis(gcode_file)
-        mesh_min, mesh_max = self.adaptive_bed_mesh.apply_min_max_limit(mesh_min, mesh_max)
+        # Generate file list
+        gcode_with_bed_mesh_min_max = {
+            '2x_3d_benchy.gcode': ((23.15, 17.76), (86.3, 94.02)),
+            '2x_3d_benchy_arc_fitting.gcode': ((23.15, 17.76), (86.3, 94.02)),
+            '3d_benchy_arc_fitting.gcode': ((29.78, 47.53), (77.49, 72.47)),
+            '3DBenchy-Voron 0.1-ABS.gcode': ((52.16, 38.46), (67.84, 76.92)),
+            'G2_Cylinder_PLA_12s.gcode': ((49.63, 49.3), (91.46, 75.58)),
+            'Rear Right Foot_one_piece_ABS_5h54m.gcode': ((36.11, 35.66), (81.8, 81.34)),
+            'speed_benchy_how_dare_you.gcode': ((108.14, 117.23), (146.57, 132.77))
+        }
 
-        self.assertTupleEqual(mesh_min, (23.15, 20))
-        self.assertTupleEqual(mesh_max, (86.3, 94.02))
+        for gcode_filename, (ref_mesh_min, ref_mesh_max) in gcode_with_bed_mesh_min_max.items():
+            with self.subTest(gcode_filename):
+                gcode_filepath = os.path.join(test_data_dir, gcode_filename)
+                mesh_min, mesh_max = self.adaptive_bed_mesh.generate_mesh_with_gcode_analysis(gcode_filepath)
+                mesh_min, mesh_max = self.adaptive_bed_mesh.apply_min_max_limit(mesh_min, mesh_max)
 
-    def test_generate_bed_mesh_param_with_gcode_analysis2(self):
-        gcode_file = os.path.join(test_data_dir, '3DBenchy-Voron 0.1-ABS.gcode')
-        mesh_min, mesh_max = self.adaptive_bed_mesh.generate_mesh_with_gcode_analysis(gcode_file)
-        mesh_min, mesh_max = self.adaptive_bed_mesh.apply_min_max_limit(mesh_min, mesh_max)
-
-        self.assertTupleEqual(mesh_min, (52.16, 38.46))
-        self.assertTupleEqual(mesh_max, (67.84, 76.92))
+                self.assertTupleEqual(mesh_min, ref_mesh_min)
+                self.assertTupleEqual(mesh_max, ref_mesh_max)
 
     def test_debug_gcode_analysis_plot(self):
         from matplotlib import pyplot as plt
-        gcode_file = os.path.join(test_data_dir, '3d_benchy_arc_fitting.gcode')
+        gcode_file = os.path.join(test_data_dir, 'speed_benchy_how_dare_you.gcode')
 
         first_layer_move_vertices = self.adaptive_bed_mesh.extract_first_layer_from_gcode_file(gcode_file)
 
@@ -80,7 +86,7 @@ class TestAdaptiveBedMesh(unittest.TestCase):
         # Plot probe points
         mesh_min, mesh_max = self.adaptive_bed_mesh.apply_min_max_margin((x_min, y_min), (x_max, y_max))
         mesh_min, mesh_max = self.adaptive_bed_mesh.apply_min_max_limit(mesh_min, mesh_max)
-        print(mesh_min, mesh_max)
+        print(f'Mesh Min: {mesh_min}, Mesh Max: {mesh_max}')
 
         (num_horizontal_probes, num_vertical_probes), probe_points, zero_reference_position = self.adaptive_bed_mesh.get_probe_points(mesh_min, mesh_max)
         print(num_horizontal_probes, num_vertical_probes)
@@ -90,10 +96,10 @@ class TestAdaptiveBedMesh(unittest.TestCase):
 
         ax.scatter(zero_reference_position[0], zero_reference_position[1], marker='o', label='Zero Reference Point')
 
+        # Set equal scale
+        ax.set_aspect('equal', adjustable='box')
         ax.legend(*ax.get_legend_handles_labels())
         plt.show()
-
-
 
 
 if __name__ == '__main__':
