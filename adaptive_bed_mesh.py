@@ -8,14 +8,14 @@ class AdaptiveBedMesh(object):
     def __init__(self, config):
         self._move_gcmd_interpreter = {'G0': self._move_gcmd_decoder,
                                        'G1': self._move_gcmd_decoder,
-                                       'G2': self._circular_move_gcmd_decoder,
-                                       'G3': self._circular_move_gcmd_decoder}
+                                       'G2': self._arc_move_gcmd_decoder,
+                                       'G3': self._arc_move_gcmd_decoder}
 
         # Read user configurations
         self.arc_segments = config.getint('arc_segments', 80)
         self.mesh_area_clearance = config.getfloat('mesh_area_clearance', 5)
-        self.max_probe_horizontal_distance = config.getfloat('max_probe_horizontal_distance', 25)
-        self.max_probe_vertical_distance = config.getfloat('max_probe_vertical_distance', 25)
+        self.max_probe_horizontal_distance = config.getfloat('max_probe_horizontal_distance', 50)
+        self.max_probe_vertical_distance = config.getfloat('max_probe_vertical_distance', 50)
         self.debug_mode = config.getboolean('debug_mode', False)
 
         # Some constants
@@ -37,6 +37,7 @@ class AdaptiveBedMesh(object):
         self.bed_mesh_config = config.getsection('bed_mesh')
         self.bed_mesh_config_mesh_min = self.bed_mesh_config.getfloatlist('mesh_min', count=2)
         self.bed_mesh_config_mesh_max = self.bed_mesh_config.getfloatlist('mesh_max', count=2)
+        self.bed_mesh_config_fade_end = self.bed_mesh_config.getfloat('fade_end', 0)
 
     @contextmanager
     def catch_exception_to_console(self, gcmd):
@@ -110,8 +111,8 @@ class AdaptiveBedMesh(object):
             curtime = self.printer.get_reactor().monotonic()
             gcode_filepath = self.print_stats.get_status(curtime)['filename']
 
-        first_layer_moves = self.extract_first_layer_from_gcode_file(gcode_filepath)
-        mesh_min, mesh_max = self.get_move_min_max(first_layer_moves)
+        layer_vertices = self.get_layer_vertices(gcode_filepath)
+        mesh_min, mesh_max = self.get_layer_min_max_before_fade(layer_vertices, self.bed_mesh_config_fade_end)
 
         return mesh_min, mesh_max
 
@@ -135,7 +136,7 @@ class AdaptiveBedMesh(object):
 
         return [new_move]
 
-    def _circular_move_gcmd_decoder(self, gcmd, current_coordinate):
+    def _arc_move_gcmd_decoder(self, gcmd, current_coordinate):
         gcode_params = self._move_gcmd_decoder(gcmd, current_coordinate)[0]
 
         start_coord = (current_coordinate['X'], current_coordinate['Y'])
@@ -171,24 +172,30 @@ class AdaptiveBedMesh(object):
 
         return arc_points
 
-    def extract_first_layer_from_gcode_file(self, gcode_filepath):
-        first_layer_move_vertices = []
+    def get_layer_vertices(self, gcode_filepath):
         current_coordinate = dict(X=0, Y=0, Z=0)  # don't track E
-        extrude_layer_moves = {}
         is_absolute_move = True
+        extrude_layer_moves = dict()
 
-        # Read block by blocks to termine the first layer
         with open(gcode_filepath, 'r') as fp:
             while True:
                 line = fp.readline()
 
                 if line == '':
-                    #  The print has only one layer
-                    first_layer_move_vertices = extrude_layer_moves[sorted(extrude_layer_moves.keys())[0]]
                     break
 
-                # Determine all extrusion move at the first layer
-                gcmd = line.split()
+                # Skip comment lines
+                line = line.strip()
+
+                # Nothing in front of comment
+                raw_gcmd = line.split(';')[0].strip()
+                if raw_gcmd == '':
+                    continue
+
+                # Decode gcode
+                gcmd = raw_gcmd.split()
+
+                # Skip empty
                 if len(gcmd) == 0:
                     continue
 
@@ -199,12 +206,15 @@ class AdaptiveBedMesh(object):
                 elif gcmd_header == 'G91':
                     is_absolute_move = False
 
+                # Skip gcode that is not a motion command
                 if gcmd_header not in self._move_gcmd_interpreter.keys():
                     continue
 
+                # Decode motion command
                 interpreter = self._move_gcmd_interpreter[gcmd_header]
                 new_moves = interpreter(gcmd, current_coordinate)
 
+                # Each motion command many generate one or more moves. Analyse each move
                 for new_move in new_moves:
                     for key in current_coordinate.keys():
                         new_param = new_move[key]
@@ -225,23 +235,39 @@ class AdaptiveBedMesh(object):
                     if current_layer == 0:
                         continue
 
+                    # Move to a new layer, then register the new layer
                     if current_layer not in extrude_layer_moves:
                         extrude_layer_moves[current_layer] = []
 
-                    # Is extrude move (positive)
+                    # Register only the extrude move
+                    # FIXME: This will remove non-extrude move, result in incorrect visual representation of the gcode.
                     if new_move['E'] is not None and new_move['E'] > 0:
                         extrude_layer_moves[current_layer].append(current_coordinate.copy())
 
-                print_layer_count = 0
-                for layer_height, layer_moves in extrude_layer_moves.items():
-                    if len(layer_moves) > 0:
-                        print_layer_count += 1
+        # Remove layers without extrude move
+        for key in list(extrude_layer_moves.keys()):
+            if len(extrude_layer_moves[key]) == 0:
+                extrude_layer_moves.pop(key)
+        return extrude_layer_moves
 
-                if print_layer_count > 1:
-                    first_layer_move_vertices = extrude_layer_moves[sorted(extrude_layer_moves.keys())[0]]
-                    break
+    def get_layer_min_max_before_fade(self, extrude_layer_moves, fade_end=0):
+        layer_min_max_list = list()
 
-        return first_layer_move_vertices
+        # Not defined, then we are going to analyse all layers
+        if fade_end == 0:
+            fade_end = float('inf')
+
+        for layer_height in extrude_layer_moves:
+            if layer_height < fade_end:
+
+                mesh_min, mesh_max = self.get_move_min_max(extrude_layer_moves[layer_height])
+                layer_min_max_list.append(mesh_min)
+                layer_min_max_list.append(mesh_max)
+
+        # Calculate overall min max
+        mesh_min, mesh_max = self.get_polygon_min_max(layer_min_max_list)
+
+        return mesh_min, mesh_max
 
     def get_move_min_max(self, move_vertices):
         x_min, x_max, y_min, y_max = float('inf'), 0, float('inf'), 0

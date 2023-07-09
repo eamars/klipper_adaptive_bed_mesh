@@ -1,4 +1,4 @@
-Klipper 动态网床
+Klipper 自适应网床
 ===
 [English](readme.md)
 
