@@ -71,6 +71,8 @@ class AdaptiveBedMesh(object):
 
                 break
 
+                # TODO: If anything went wrong with all above detection methods then the default bed mesh param will be used.
+
             params = self.generate_bed_mesh_params(mesh_min, mesh_max)
 
             cmd = "BED_MESH_CALIBRATE {}".format(params)

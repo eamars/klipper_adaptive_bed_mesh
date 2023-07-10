@@ -68,7 +68,7 @@ class TestAdaptiveBedMesh(unittest.TestCase):
 
     def test_debug_gcode_analysis_plot(self):
         from matplotlib import pyplot as plt
-        gcode_file = os.path.join(test_data_dir, 'CFFFP_[a]_stealthburner_main_body.gcode')
+        gcode_file = os.path.join(test_data_dir, '2x_3d_benchy_arc_fitting.gcode')
 
         layer_vertices = self.adaptive_bed_mesh.get_layer_vertices(gcode_file)
         first_layer_move_vertices = layer_vertices[min(layer_vertices.keys())]
