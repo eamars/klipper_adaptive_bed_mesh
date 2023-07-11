@@ -350,8 +350,8 @@ class AdaptiveBedMesh(object):
         num_vertical_probes = math.ceil(vertical_distance / self.max_probe_vertical_distance)
 
         # Make sure there are minimum probes per side
-        num_horizontal_probes = max(self.minimum_axis_probe_counts, num_horizontal_probes)
-        num_vertical_probes = max(self.minimum_axis_probe_counts, num_vertical_probes)
+        num_horizontal_probes = int(max(self.minimum_axis_probe_counts, num_horizontal_probes))
+        num_vertical_probes = int(max(self.minimum_axis_probe_counts, num_vertical_probes))
 
         horizontal_probe_points = numpy.linspace(mesh_min[0], mesh_max[0], num_horizontal_probes)
         vertical_probe_points = numpy.linspace(mesh_min[1], mesh_max[1], num_vertical_probes)
