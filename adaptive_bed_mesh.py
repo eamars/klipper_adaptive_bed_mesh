@@ -153,7 +153,9 @@ class AdaptiveBedMesh(object):
     def generate_mesh_with_exclude_object(self, objects):
         object_min_max_list = []
         for obj in objects:
-            object_min_max_list = self.get_polygon_min_max(obj['polygon'])
+            mesh_min, mesh_max = self.get_polygon_min_max(obj['polygon'])
+            object_min_max_list.append(mesh_min)
+            object_min_max_list.append(mesh_max)
 
         mesh_min, mesh_max = self.get_polygon_min_max(object_min_max_list)
 
