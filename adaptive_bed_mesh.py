@@ -85,10 +85,14 @@ class AdaptiveBedMesh(object):
                 # Method 3: Gcode analysis boundary detection
                 if not self.disable_gcode_analysis_boundary_detection:
                     self.log_to_gcmd_respond(gcmd, "Attempting to detect boundary by Gcode analysis")
-                    gcode_filepath = gcmd.get("GCODE_FILEPATH", None)
-                    mesh_min, mesh_max = self.generate_mesh_with_gcode_analysis(gcode_filepath)
-                    self.log_to_gcmd_respond(gcmd, "Use Gcode analysis boundary detection")
-                    break
+                    try:
+                        gcode_filepath = gcmd.get("GCODE_FILEPATH", None)
+                        mesh_min, mesh_max = self.generate_mesh_with_gcode_analysis(gcode_filepath)
+                        self.log_to_gcmd_respond(gcmd, "Use Gcode analysis boundary detection")
+                    except Exception as e:
+                        self.log_to_gcmd_respond(gcmd, "Failed to run Gcode analysis: {}".format(e))
+                    else:
+                        break
 
                 self.log_to_gcmd_respond(gcmd, "Fallback to default bed mesh")
                 # Method 4: use default bed mesh settings
