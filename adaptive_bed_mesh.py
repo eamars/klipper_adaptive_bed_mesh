@@ -2,6 +2,7 @@ import numpy
 import math
 from contextlib import contextmanager
 import traceback
+import os
 
 
 class AdaptiveBedMesh(object):
@@ -77,9 +78,16 @@ class AdaptiveBedMesh(object):
                 # Method 2: Exclude object boundary detection
                 if not self.disable_exclude_object_boundary_detection:
                     self.log_to_gcmd_respond(gcmd, "Attempting to detect boundary by exclude boundary")
-                    if self.exclude_object.objects:
-                        mesh_min, mesh_max = self.generate_mesh_with_exclude_object(self.exclude_object.objects)
-                        self.log_to_gcmd_respond(gcmd, "Use exclude object boundary detection")
+                    try:
+                        if self.debug_mode:
+                            self.log_to_gcmd_respond(gcmd, self.exclude_object.objects)
+
+                        if self.exclude_object.objects:
+                            mesh_min, mesh_max = self.generate_mesh_with_exclude_object(self.exclude_object.objects)
+                            self.log_to_gcmd_respond(gcmd, "Use exclude object boundary detection")
+                    except Exception as e:
+                        self.log_to_gcmd_respond(gcmd, "Failed to run exclude object analysis: {}".format(e))
+                    else:
                         break
 
                 # Method 3: Gcode analysis boundary detection
@@ -149,7 +157,11 @@ class AdaptiveBedMesh(object):
     def generate_mesh_with_gcode_analysis(self, gcode_filepath=None):
         if gcode_filepath is None:
             curtime = self.printer.get_reactor().monotonic()
-            gcode_filepath = self.print_stats.get_status(curtime)['filename']
+            filename = self.print_stats.get_status(curtime)['filename']
+            gcode_filepath = os.path.join(self.print_stats.sdcard_dirname, filename)
+
+        if self.debug_mode:
+            self.log_to_gcmd_respond("Load Gcode filepath: {}".format(gcode_filepath))
 
         layer_vertices = self.get_layer_vertices(gcode_filepath)
         mesh_min, mesh_max = self.get_layer_min_max_before_fade(layer_vertices, self.bed_mesh_config_fade_end)
