@@ -13,11 +13,12 @@ Klipper 自适应网床插件
 - [Klipper Adaptive meshing & Purging](https://github.com/kyleisah/Klipper-Adaptive-Meshing-Purging)
 
 # 支持的网床生成模式
-*自适应网床*插件支持3种操作模式：
+*自适应网床*插件支持3种操作模式，并根据以下顺序在参数不足时自动切换到下一种备选算法。
 
-- 切片软件提供的首层最小/最大坐标。
-- 使用Klipper排除对象进行对象外框检测。
-- 使用GCode分析进行对象形状检测。
+1. 切片软件提供的首层最小/最大坐标。
+2. 使用Klipper排除对象进行对象外框检测。
+3. 使用GCode分析进行对象形状检测。
+
 
 ## 切片软件提供的首层最小/最大坐标
 大多数切片软件可以导出首层挤出运动的最小（靠近零点坐标）和最大坐标。以下是一些常用切片软件的语法。
@@ -84,6 +85,11 @@ GCode分析将在指定层数提前停止。
     max_probe_horizontal_distance: 50    #（可选）水平探针点之间的最大距离（水平）（单位：毫米）。
     max_probe_vertical_distance: 50      #（可选）垂直探针点之间的最大距离（单位：毫米）。
     use_relative_reference_index: False  #（可选）对于旧版Klipper（<0.11.2xx），`use_relative_reference_index`用于确定中心点。对于新版本不需要此项。
+
+    # (可选) 关闭特定的边界检测算法
+    disable_slicer_min_max_boundary_detection: False
+    disable_exclude_object_boundary_detection: False
+    disable_gcode_analysis_boundary_detection: False
 
 ## 小贴士：如何确定最大水平/垂直探针距离
 *自适应网床*使用探针距离而不是探测点数量来实现更一致的探测密度。

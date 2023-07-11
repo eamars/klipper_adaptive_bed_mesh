@@ -13,10 +13,10 @@ The *Adaptive Bed Mesh* plugin is inspired from multiple open source project
 - [Klipper Adaptive meshing & Purging](https://github.com/kyleisah/Klipper-Adaptive-Meshing-Purging)
 
 ## Features
-The *Adaptive Bed Mesh* plugin supports 3 operating modes: 
-- First layer min/max provided by the slicer.
-- Object shapes detection by Klipper Exclude Object.
-- Object shapes detection by GCode analysis.
+The *Adaptive Bed Mesh* plugin supports 3 operating modes. By default, the below list is also the precedence of the operation. 
+1. First layer min/max provided by the slicer.
+2. Object shapes detection by Klipper Exclude Object.
+3. Object shapes detection by GCode analysis.
 
 If all above modes are failed then the *Adaptive Bed Mesh* will fall back to the default full bed mesh configuration. 
 
@@ -92,6 +92,11 @@ The `[adaptive_bed_mesh]` need to be declared under `printer.cfg`, after the `[e
     max_probe_horizontal_distance: 50    # (Optional) Maximum distance between two horizontal probe points in mm. 
     max_probe_vertical_distance: 50      # (Optional) Maximum distance between two vertical probe points in mm.
     use_relative_reference_index: False  # (Optional) For older Klipper (< 0.11.2xx), the `use_relative_reference_index` is used to determine the center point. This is not required for the newer release.
+
+    # (Optional) Enable/Disable detection algorithm on demand
+    disable_slicer_min_max_boundary_detection: False
+    disable_exclude_object_boundary_detection: False
+    disable_gcode_analysis_boundary_detection: False
 
 
 ## How to determine the maximum horizontal/vertical probe distances
