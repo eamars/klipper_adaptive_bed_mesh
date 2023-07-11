@@ -59,7 +59,7 @@ GCode分析将在指定层数提前停止。
 
 # 示例配置
 ## [bed_mesh]
-*自适应网床*会从[bed_mesh]读取部分参数以确保运行。以下是必填属性。请确保最小/最大坐标在安全的探测边界内。
+*自适应网床*会从`[bed_mesh]`读取部分参数以确保运行。以下是必填属性。请确保最小/最大坐标在安全的探测边界内。
 
     [bed_mesh]
     # 网格的起始坐标。自适应床面网格将不会生成小于此坐标的点。
@@ -75,6 +75,14 @@ GCode分析将在指定层数提前停止。
 > **_注意_** ： relative_reference_index现在已弃用。
 
 > **_注意_** ： `zero_reference_position将会被此插件覆盖，因此您不需要在[bed_mesh]制定坐标。
+
+
+## [virtual_sdcard]
+*自适应网床*会从`[virtual_sdcard]`读取部分参数以确保运行。以下是必填属性。在通常情况下`[virtual_sdcard]`会由 Mainsail 或者 Fluidd 等网页前端配置文件提供。
+    
+    [virtual_sdcard]
+    path: ~/printer_data/gcodes
+
 
 ## [adaptive_bed_mesh]
 [adaptive_bed_mesh]需要在printer.cfg中的 `[exclude_object]` 和 `[virtual_sdcard]` 之后声明。

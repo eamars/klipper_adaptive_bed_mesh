@@ -83,6 +83,13 @@ coordinates are within the safe probing boundaries.
 > **_NOTE:_** The `zero_reference_position` will be overwritten by the plugin so you don't need to configure it from the `[bed_mesh]`
 > section. 
 
+## [virtual_sdcard]
+The *Adaptive Bed Mesh* will use values from `[virtual_sdcard]` sections. Below are required attributes. Usually `[virtual_sdcard]` is 
+defined under the Mainsail or Fluidd configuration. 
+    
+    [virtual_sdcard]
+    path: ~/printer_data/gcodes
+
 ## [adaptive_bed_mesh]
 The `[adaptive_bed_mesh]` need to be declared under `printer.cfg`, after the `[exclude_object]` and `[virtual_sdcard]`. 
 
