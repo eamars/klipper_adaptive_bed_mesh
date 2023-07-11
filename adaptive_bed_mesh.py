@@ -49,6 +49,11 @@ class AdaptiveBedMesh(object):
         self.bed_mesh_config_mesh_max = self.bed_mesh_config.getfloatlist('mesh_max', count=2)
         self.bed_mesh_config_fade_end = self.bed_mesh_config.getfloat('fade_end', 0)
 
+        # Read [virtual_sdcard] section information
+        self.virtual_sdcard_config = config.getsection('virtual_sdcard')
+        sd = self.virtual_sdcard_config.get('path')
+        self.virtual_sdcard_path = os.path.normpath(os.path.expanduser(sd))
+
     def log_to_gcmd_respond(self, gcmd, text):
         gcmd.respond_info("AdaptiveBedMesh:" + text)
 
@@ -80,7 +85,7 @@ class AdaptiveBedMesh(object):
                     self.log_to_gcmd_respond(gcmd, "Attempting to detect boundary by exclude boundary")
                     try:
                         if self.debug_mode:
-                            self.log_to_gcmd_respond(gcmd, self.exclude_object.objects)
+                            self.log_to_gcmd_respond(gcmd, str(self.exclude_object.objects))
 
                         if self.exclude_object.objects:
                             mesh_min, mesh_max = self.generate_mesh_with_exclude_object(self.exclude_object.objects)
@@ -158,7 +163,7 @@ class AdaptiveBedMesh(object):
         if gcode_filepath is None:
             curtime = self.printer.get_reactor().monotonic()
             filename = self.print_stats.get_status(curtime)['filename']
-            gcode_filepath = os.path.join(self.print_stats.sdcard_dirname, filename)
+            gcode_filepath = os.path.join(self.virtual_sdcard_path, filename)
 
         if self.debug_mode:
             self.log_to_gcmd_respond("Load Gcode filepath: {}".format(gcode_filepath))
