@@ -17,6 +17,14 @@ class AdaptiveBedMesh(object):
         self.max_probe_horizontal_distance = config.getfloat('max_probe_horizontal_distance', 50)
         self.max_probe_vertical_distance = config.getfloat('max_probe_vertical_distance', 50)
         self.use_relative_reference_index = config.getboolean('use_relative_reference_index', False)
+
+        # Enable/Disable boundary detection
+        self.disable_slicer_min_max_boundary_detection = config.getboolean('disable_slicer_min_max_boundary_detection', False)
+        self.disable_exclude_object_boundary_detection = config.getboolean('disable_exclude_object_boundary_detection', False)
+        self.disable_gcode_analysis_boundary_detection = config.getboolean('disable_gcode_analysis_boundary_detection', False)
+
+        # Debug options
+        # By enabling the `debug_mode` the Python exception won't cause Klipper to shutdown
         self.debug_mode = config.getboolean('debug_mode', False)
 
         # Some constants
@@ -40,47 +48,62 @@ class AdaptiveBedMesh(object):
         self.bed_mesh_config_mesh_max = self.bed_mesh_config.getfloatlist('mesh_max', count=2)
         self.bed_mesh_config_fade_end = self.bed_mesh_config.getfloat('fade_end', 0)
 
+    def log_to_gcmd_respond(self, gcmd, text):
+        gcmd.respond_info("AdaptiveBedMesh:" + text)
+
     @contextmanager
     def catch_exception_to_console(self, gcmd):
         try:
             yield
         except Exception as e:
-            gcmd.respond_info("Caught exception: {}, \nCallstack:\n---------------\n{}".format(e, traceback.format_exc()))
+            self.log_to_gcmd_respond(gcmd, "Caught exception: {}, \nCallstack:\n---------------\n{}".format(e, traceback.format_exc()))
             if not self.debug_mode:
                 raise
 
     def cmd_ADAPTIVE_BED_MESH_CALIBRATE(self, gcmd):
         with self.catch_exception_to_console(gcmd):
             while True:
-                # If area_start and area_stop are provided then use that
-                area_start = gcmd.get("AREA_START", default=None)
-                area_end = gcmd.get("AREA_END", default=None)
-                if area_start is not None and area_end is not None:
-                    mesh_min = [float(s) for s in area_start.split(',')]
-                    mesh_max = [float(s) for s in area_end.split(',')]
+                # Method 1: Slicer min max boundary detection
+                if not self.disable_slicer_min_max_boundary_detection:
+                    self.log_to_gcmd_respond(gcmd, "Attempting to detect boundary by slicer min max")
+                    area_start = gcmd.get("AREA_START", default=None)
+                    area_end = gcmd.get("AREA_END", default=None)
+                    if area_start is not None and area_end is not None:
+                        mesh_min = [float(s) for s in area_start.split(',')]
+                        mesh_max = [float(s) for s in area_end.split(',')]
+                        self.log_to_gcmd_respond(gcmd, "Use min max boundary detection")
+                        break
+
+                # Method 2: Exclude object boundary detection
+                if not self.disable_exclude_object_boundary_detection:
+                    self.log_to_gcmd_respond(gcmd, "Attempting to detect boundary by exclude boundary")
+                    if self.exclude_object.objects:
+                        mesh_min, mesh_max = self.generate_mesh_with_exclude_object(self.exclude_object.objects)
+                        self.log_to_gcmd_respond(gcmd, "Use exclude object boundary detection")
+                        break
+
+                # Method 3: Gcode analysis boundary detection
+                if not self.disable_gcode_analysis_boundary_detection:
+                    self.log_to_gcmd_respond(gcmd, "Attempting to detect boundary by Gcode analysis")
+                    gcode_filepath = gcmd.get("GCODE_FILEPATH", None)
+                    mesh_min, mesh_max = self.generate_mesh_with_gcode_analysis(gcode_filepath)
+                    self.log_to_gcmd_respond(gcmd, "Use Gcode analysis boundary detection")
                     break
 
-                # If exclusive object is activated then use exclusive object
-                if self.exclude_object.objects:
-                    mesh_min, mesh_max = self.generate_mesh_with_exclude_object(self.exclude_object.objects)
-                    break
-
-                # If no other information is available then look at gcode for first layer analysis
-                gcode_filepath = gcmd.get("GCODE_FILEPATH", None)
-                mesh_min, mesh_max = self.generate_mesh_with_gcode_analysis(gcode_filepath)
+                self.log_to_gcmd_respond(gcmd, "Fallback to default bed mesh")
+                # Method 4: use default bed mesh settings
+                mesh_min = self.bed_mesh_config_mesh_min
+                mesh_max = self.bed_mesh_config_mesh_max
 
                 break
 
-                # TODO: If anything went wrong with all above detection methods then the default bed mesh param will be used.
-
+            # Apply the bed mesh margin and limit, then generate the bed_mesh_calibrate parameter
             params = self.generate_bed_mesh_params(mesh_min, mesh_max)
 
             cmd = "BED_MESH_CALIBRATE {}".format(params)
-            gcmd.respond_info(cmd)
+            self.log_to_gcmd_respond(gcmd, cmd)
 
-            self.gcode.run_script_from_command(
-                cmd
-            )
+            self.gcode.run_script_from_command(cmd)
 
     def generate_bed_mesh_params(self, mesh_min, mesh_max):
         # Apply margin
