@@ -3,22 +3,22 @@ Klipper Adaptive Bed Mesh
 [中文版](readme_zh_cn.md)
 
 # What is it?
-The _Adaptive Bed Mesh_ plugin is designed to generate the bed mesh parameter based on the sliced part dynamically. 
+The *Adaptive Bed Mesh* plugin is designed to generate the bed mesh parameter based on the sliced part dynamically. 
 With finer bed mesh density around printed parts you can achieve better accuracy and lesser time spent on probing.
 
 ![bed_mesh_path](resources/bed_mesh_path.png)
 
-The _Adaptive Bed Mesh_ plugin is inspired from multiple open source project
+The *Adaptive Bed Mesh* plugin is inspired from multiple open source project
 - [Klipper mesh on print area only install guide](https://gist.github.com/ChipCE/95fdbd3c2f3a064397f9610f915f7d02)
 - [Klipper Adaptive meshing & Purging](https://github.com/kyleisah/Klipper-Adaptive-Meshing-Purging)
 
 ## Features
-The _Adaptive Bed Mesh_ plugin supports 3 operating modes: 
+The *Adaptive Bed Mesh* plugin supports 3 operating modes: 
 - First layer min/max provided by the slicer.
 - Object shapes detection by Klipper Exclude Object.
 - Object shapes detection by GCode analysis.
 
-If all above modes are failed then the _Adaptive Bed Mesh_ will fall back to the default full bed mesh configuration. 
+If all above modes are failed then the *Adaptive Bed Mesh* will fall back to the default full bed mesh configuration. 
 
 ### First layer min/max provided by the slicer
 Most slicer can export the min (closest to 0,0) and max coordinate of the first layer extrude motions. 
@@ -63,8 +63,8 @@ bed mesh compensation at the same height.
     fade_target: 0
 
 # Configurations
-## `[bed_mesh]`
-The _Adaptive Bed Mesh_ will use values from `[bed_mesh]` sections. Below are required attributes. Please make sure the min/max
+## [bed_mesh]
+The *Adaptive Bed Mesh* will use values from `[bed_mesh]` sections. Below are required attributes. Please make sure the min/max
 coordinates are within the safe probing boundaries. 
 
     [bed_mesh]
@@ -95,7 +95,7 @@ The `[adaptive_bed_mesh]` need to be declared under `printer.cfg`, after the `[e
 
 
 ## How to determine the maximum horizontal/vertical probe distances
-The _Adaptive Bed Mesh_ uses probe distance instead number of points to be probed to achieve better probe density consistency
+The *Adaptive Bed Mesh* uses probe distance instead number of points to be probed to achieve better probe density consistency
 with respect to parts in different sizes. 
 
 To calculate the optimal probe distance, you can use the reference number of points for a full printed bed as an example. 
