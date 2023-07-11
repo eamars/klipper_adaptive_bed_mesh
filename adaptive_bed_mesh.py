@@ -165,9 +165,6 @@ class AdaptiveBedMesh(object):
             filename = self.print_stats.get_status(curtime)['filename']
             gcode_filepath = os.path.join(self.virtual_sdcard_path, filename)
 
-        if self.debug_mode:
-            self.log_to_gcmd_respond("Load Gcode filepath: {}".format(gcode_filepath))
-
         layer_vertices = self.get_layer_vertices(gcode_filepath)
         mesh_min, mesh_max = self.get_layer_min_max_before_fade(layer_vertices, self.bed_mesh_config_fade_end)
 
