@@ -101,6 +101,10 @@ class AdaptiveBedMesh(object):
 
                 break
 
+            if self.debug_mode:
+                self.log_to_gcmd_respond(gcmd, "mesh_min: {}, mesh_max: {}".format(mesh_min, mesh_max))
+                self.log_to_gcmd_respond(gcmd, "mesh_area_clearance: {}".format(self.mesh_area_clearance))
+
             # Apply the bed mesh margin and limit, then generate the bed_mesh_calibrate parameter
             params = self.generate_bed_mesh_params(mesh_min, mesh_max)
 
