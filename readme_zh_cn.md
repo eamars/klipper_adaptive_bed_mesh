@@ -57,35 +57,65 @@ GCode分析将在指定层数提前停止。
     fade_end: 10
     fade_target: 0
 
+
+# 安装（集成 Moonraker）
+将代码同步到当前用户根目录。
+
+    cd ~
+    git clone https://gitee.com/mjf521/klipper_adaptive_bed_mesh.git
+
+第一次安装时需要执行安装脚本。
+
+    source klipper_adaptive_bed_mesh/install.sh
+
+同时将以下内容复制到 moonraker.conf 以开启自动更新检查。
+
+    [update_manager client klipper_adaptive_bed_mesh]
+    type: git_repo
+    primary_branch: main
+    path: ~/klipper_adaptive_bed_mesh
+    origin: https://gitee.com/mjf521/klipper_adaptive_bed_mesh.git
+    install_script: install.sh
 # 示例配置
-## [bed_mesh]
-*自适应网床*会从`[bed_mesh]`读取部分参数以确保运行。以下是必填属性。请确保最小/最大坐标在安全的探测边界内。
+## ~~[bed_mesh] 默认无需配置~~
+~~*自适应网床*会从`[bed_mesh]`读取部分参数以确保运行。以下是必填属性。请确保最小/最大坐标在安全的探测边界内。~~
+
+
 
     [bed_mesh]
-    # 网格的起始坐标。自适应床面网格将不会生成小于此坐标的点。
+    # 网格的起始坐标。自适应床面网格将不会生成小于此坐标的点
     mesh_min: 20, 20
     
-    # 床面网格的最大坐标。自适应床面网格将不会生成大于此坐标的点。
-    # 注意：这不一定是探针序列的最后一个点。
+    # 床面网格的最大坐标。自适应床面网格将不会生成大于此坐标的点
+    # 注意：这不一定是探针序列的最后一个点
     mesh_max: 230, 230
     
     #（可选）GCode分析和网床补偿的最高高度
     fade_end: 10
+
+
 
 > **_注意_** ： relative_reference_index现在已弃用。
 
 > **_注意_** ： `zero_reference_position将会被此插件覆盖，因此您不需要在[bed_mesh]制定坐标。
 
 
-## [virtual_sdcard]
-*自适应网床*会从`[virtual_sdcard]`读取部分参数以确保运行。以下是必填属性。在通常情况下`[virtual_sdcard]`会由 Mainsail 或者 Fluidd 等网页前端配置文件提供。
+## ~~[virtual_sdcard] 理论上默认都有的不用管它~~
+~~*自适应网床*会从`[virtual_sdcard]`读取部分参数以确保运行。以下是必填属性。在通常情况下`[virtual_sdcard]`会由 Mainsail 或者 Fluidd 等网页前端配置文件提供。~~
     
     [virtual_sdcard]
     path: ~/printer_data/gcodes
 
 
-## [adaptive_bed_mesh]
+## [adaptive_bed_mesh] 与 [gcode_macro PRINT_START]
 [adaptive_bed_mesh]需要在printer.cfg中的 `[exclude_object]` 和 `[virtual_sdcard]` 之后声明。
+
+    [gcode_macro PRINT_START]
+    ***************
+    QUAD_GANTRY_LEVEL                    # 自动调平后添加
+    ***************
+    ADAPTIVE_BED_MESH_CALIBRATE          # 执行动态网床
+    ***************
 
     [adaptive_bed_mesh]
     arc_segments: 80                     #（可选）G2/3解码为直线运动的细分数量。
@@ -106,38 +136,21 @@ GCode分析将在指定层数提前停止。
 
     探针间隔 = 250 / 5 = 50mm
 
-# 使用方法
-您仅需要在 `PRINT_START` 宏里调用 `ADAPTIVE_BED_MESH_CALIBREATE` 即可。
+## 故障报错
+在klipper代码进行添加后发现报错：Internal error during connect: No module named 'numpy'  
+请参照以下方式进行修改 
+ 
+        sudo apt update  
+        sudo apt install python3-numpy python3-matplotlib libatlas-base-dev  
+        ~/klippy-env/bin/pip install -v numpy 
 
-    [gcode_macro PRINT_START]
-    gcode:
-        ...
-        ADAPTIVE_BED_MESH_CALIBRATE
-        ...
+请注意，根据 CPU 的性能，可能需要很长时间 ，最多 10-20 分钟。耐心等待安装完成。在某些情况下，如果主板的 RAM 太少，安装可能会失败，您需要启用交换空间。  
+  
+在klipper代码进行添加后发现报错 Unknown config object'bed_mesh'或是Unknown config object'exclude_object'  
 
+*printer.cfg*中添加[bed_mesh]或是[exclude_object]  
 
-> **_注意:_**  如果您正在使用 [自动Z校准插件](https://github.com/protoloft/klipper_z_calibration)
-> 您则需要在调用 `CALIBRATE_Z` 之前调用 `ADAPTIVE_BED_MESH_CALIBRATE`.
-
-
-# 安装（集成 Moonraker）
-将代码同步到当前用户根目录。
-
-    cd ~
-    git clone https://github.com/eamars/klipper_adaptive_bed_mesh.git
-
-第一次安装时需要执行安装脚本。
-
-    source klipper_adaptive_bed_mesh/install.sh
-
-同时将以下内容复制到 moonraker.conf 以开启自动更新检查。
-
-    [update_manager client klipper_adaptive_bed_mesh]
-    type: git_repo
-    primary_branch: main
-    path: ~/klipper_adaptive_bed_mesh
-    origin: https://github.com/eamars/klipper_adaptive_bed_mesh.git
-    install_script: install.sh
+注意以上两个参数必须在[adaptive_bed_mesh]这个参数**之前**添加否则会报错
 
 # 贡献代码
 感谢观众姥爷贡献代码。为了保证代码的鲁棒性和正确性，在提交PR之前请确保单元测试全部通过，并在必要时添加新的测试。
