@@ -116,6 +116,19 @@ can calculate by
 
     probe_distance = 250 / 5 = 50mm
 
+# Usage
+Call `ADAPTIVE_BED_MESH_CALIBREATE` as the part of `PRINT_START` macro is all you need. 
+
+Example: 
+
+    [gcode_macro PRINT_START]
+    gcode:
+        ...
+        ADAPTIVE_BED_MESH_CALIBRATE
+        ...
+
+> **_NOTE:_**  If you're using the [Automatic Z-Calibration plugin](https://github.com/protoloft/klipper_z_calibration)
+> then you need to ensure the `ADAPTIVE_BED_MESH_CALIBRATE` is called prior to `CALIBRATE_Z`.
 
 
 # Install via Moonraker

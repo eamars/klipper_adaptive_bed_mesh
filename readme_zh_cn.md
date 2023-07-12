@@ -106,6 +106,20 @@ GCode分析将在指定层数提前停止。
 
     探针间隔 = 250 / 5 = 50mm
 
+# 使用方法
+您仅需要在 `PRINT_START` 宏里调用 `ADAPTIVE_BED_MESH_CALIBREATE` 即可。
+
+    [gcode_macro PRINT_START]
+    gcode:
+        ...
+        ADAPTIVE_BED_MESH_CALIBRATE
+        ...
+
+
+> **_注意:_**  如果您正在使用 [自动Z校准插件](https://github.com/protoloft/klipper_z_calibration)
+> 您则需要在调用 `CALIBRATE_Z` 之前调用 `ADAPTIVE_BED_MESH_CALIBRATE`.
+
+
 # 安装（集成 Moonraker）
 将代码同步到当前用户根目录。
 
