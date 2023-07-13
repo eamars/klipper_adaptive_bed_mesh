@@ -112,7 +112,7 @@ GCode分析将在指定层数提前停止。
 
     [gcode_macro PRINT_START]
     ***************
-    QUAD_GANTRY_LEVEL                    # 自动调平后添加
+    QUAD_GANTRY_LEVEL                    # 自动调平后
     ***************
     ADAPTIVE_BED_MESH_CALIBRATE          # 执行动态网床
     ***************
@@ -128,6 +128,9 @@ GCode分析将在指定层数提前停止。
     disable_slicer_min_max_boundary_detection: False
     disable_exclude_object_boundary_detection: False
     disable_gcode_analysis_boundary_detection: False
+
+> **_注意:_**  如果您正在使用 [自动Z校准插件](https://github.com/protoloft/klipper_z_calibration)
+> 您则需要在调用 `CALIBRATE_Z` 之前调用 `ADAPTIVE_BED_MESH_CALIBRATE`.  
 
 ## 小贴士：如何确定最大水平/垂直探针距离
 *自适应网床*使用探针距离而不是探测点数量来实现更一致的探测密度。
@@ -148,9 +151,41 @@ GCode分析将在指定层数提前停止。
   
 在klipper代码进行添加后发现报错 Unknown config object'bed_mesh'或是Unknown config object'exclude_object'  
 
-*printer.cfg*中添加[bed_mesh]或是[exclude_object]  
+*printer.cfg*中添加  
+
+       [bed_mesh]     #同时检查该条命令位置  
+
+       [exclude_object]  
+
+同时需要在moonraker.conf添加以下代码以保证排除对象功能启用  
+
+    [file_manager]
+    enable_object_processing: True
 
 注意以上两个参数必须在[adaptive_bed_mesh]这个参数**之前**添加否则会报错
+
+> **_注意:_**  
+    ***如果您正在使用的切片软件是： SuperSlicer 请不要犹豫删掉它果断点因为这个软件可能没法使用大佬的动态网床***  
+
+***踩坑指南之各种奇葩报错****  
+
+切片软件配置如下，缩略图问题引起无法执行，主要由于主机低配造成无法解析    
+ 
+方案一、建议关掉它，避开这个问题，虽然有的人没遇到  
+
+![排坑](img/%E6%8E%92%E5%9D%911.png)
+
+处理方案二、手动重新配置下缩略图大小你会发现它又可以用了心累 :disappointed_relieved: 
+
+开始代码配置中加热配置引起得故障报错   Heater extruder not heating at expected rate  
+
+修改开始代码把动态网床代码放到打印头加热代码以前然后在动态网床结束后开始加热打印头，如果修改后问题依旧那就把热床代码同样进行操作  
+     
+    # 示例仅为参考用途  
+
+    PRINT START 
+    M109 S[first_layer_temperature]  
+    
 
 # 贡献代码
 感谢观众姥爷贡献代码。为了保证代码的鲁棒性和正确性，在提交PR之前请确保单元测试全部通过，并在必要时添加新的测试。
