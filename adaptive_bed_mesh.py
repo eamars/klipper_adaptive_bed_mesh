@@ -15,8 +15,8 @@ class AdaptiveBedMesh(object):
         # Read user configurations
         self.arc_segments = config.getint('arc_segments', 80)
         self.mesh_area_clearance = config.getfloat('mesh_area_clearance', 5)
-        self.max_probe_horizontal_distance = config.getfloat('max_probe_horizontal_distance', 50)
-        self.max_probe_vertical_distance = config.getfloat('max_probe_vertical_distance', 50)
+        self.max_probe_horizontal_distance = config.getfloat('max_probe_horizontal_distance', 5)
+        self.max_probe_vertical_distance = config.getfloat('max_probe_vertical_distance', 5)
         self.use_relative_reference_index = config.getboolean('use_relative_reference_index', False)
 
         # Enable/Disable boundary detection
@@ -79,6 +79,8 @@ class AdaptiveBedMesh(object):
                         mesh_max = [float(s) for s in area_end.split(',')]
                         self.log_to_gcmd_respond(gcmd, "Use min max boundary detection")
                         break
+                    else:
+                        self.log_to_gcmd_respond(gcmd, "Failed to run slicer min max: No information available")
 
                 # Method 2: Exclude object boundary detection
                 if not self.disable_exclude_object_boundary_detection:
@@ -90,10 +92,11 @@ class AdaptiveBedMesh(object):
                         if self.exclude_object.objects:
                             mesh_min, mesh_max = self.generate_mesh_with_exclude_object(self.exclude_object.objects)
                             self.log_to_gcmd_respond(gcmd, "Use exclude object boundary detection")
+                            break
+                        else:
+                            self.log_to_gcmd_respond(gcmd, "Failed to run exclude object analysis: No exclude object information available")
                     except Exception as e:
                         self.log_to_gcmd_respond(gcmd, "Failed to run exclude object analysis: {}".format(e))
-                    else:
-                        break
 
                 # Method 3: Gcode analysis boundary detection
                 if not self.disable_gcode_analysis_boundary_detection:
@@ -102,10 +105,9 @@ class AdaptiveBedMesh(object):
                         gcode_filepath = gcmd.get("GCODE_FILEPATH", None)
                         mesh_min, mesh_max = self.generate_mesh_with_gcode_analysis(gcode_filepath)
                         self.log_to_gcmd_respond(gcmd, "Use Gcode analysis boundary detection")
+                        break
                     except Exception as e:
                         self.log_to_gcmd_respond(gcmd, "Failed to run Gcode analysis: {}".format(e))
-                    else:
-                        break
 
                 self.log_to_gcmd_respond(gcmd, "Fallback to default bed mesh")
                 # Method 4: use default bed mesh settings
