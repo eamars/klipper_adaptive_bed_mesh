@@ -198,7 +198,12 @@ class AdaptiveBedMesh(object):
         gcode_params = self._move_gcmd_decoder(gcmd, current_coordinate)[0]
 
         start_coord = (current_coordinate['X'], current_coordinate['Y'])
-        end_coord = (gcode_params['X'], gcode_params['Y'])
+
+        # TODO: If the gcode specifies P<n> then X and Y are not necessary output. Need to natively support P<n>
+        #   instead of assuming X and Y will be omitted.
+
+        end_coord = (gcode_params['X'] if gcode_params['X'] is not None else current_coordinate['X'],
+                     gcode_params['Y'] if gcode_params['Y'] is not None else current_coordinate['Y'])
 
         center_coord = (start_coord[0] + gcode_params['I'], start_coord[1] + gcode_params['J'])
 
@@ -237,7 +242,11 @@ class AdaptiveBedMesh(object):
 
         with open(gcode_filepath, 'r') as fp:
             while True:
-                line = fp.readline()
+                try:
+                    line = fp.readline()
+                except UnicodeDecodeError as e:
+                    # Ignore UnicodeDecodeError (not really important)
+                    continue
 
                 if line == '':
                     break

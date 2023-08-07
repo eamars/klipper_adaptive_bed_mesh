@@ -58,7 +58,8 @@ class TestAdaptiveBedMesh(unittest.TestCase):
             'speed_benchy_how_dare_you.gcode': ((86.19, 104.75), (155.69, 145.25)),
             'V6_Plenum_Lid_ABS_8h0m.gcode': ((17.73, 16.52), (230.49, 225.55)),
             'ss_[a]_stealthburner_main_body_beta7-Voron 2.4 250-ABS.gcode': ((36.15, 38.15), (210.94, 211.86)),
-            'CFFFP_[a]_stealthburner_main_body.gcode': ((111.56, 81.33), (188.44, 218.73))
+            'CFFFP_[a]_stealthburner_main_body.gcode': ((111.56, 81.33), (188.44, 218.73)),
+            'z-locks-200_PLA_57m7s.gcode': ((36.83, 110.53), (263.17, 188.76)),
         }
 
         for gcode_filename, (ref_mesh_min, ref_mesh_max) in gcode_with_bed_mesh_min_max.items():
@@ -73,7 +74,7 @@ class TestAdaptiveBedMesh(unittest.TestCase):
 
     def test_debug_gcode_analysis_plot(self):
         from matplotlib import pyplot as plt
-        gcode_file = os.path.join(test_data_dir, 'infinity_cube_PLA_2h23m.gcode')
+        gcode_file = os.path.join(test_data_dir, '2x_3d_benchy.gcode')
 
         layer_vertices = self.adaptive_bed_mesh.get_layer_vertices(gcode_file)
         first_layer_move_vertices = layer_vertices[min(layer_vertices.keys())]
