@@ -15,8 +15,8 @@ class AdaptiveBedMesh(object):
         # Read user configurations
         self.arc_segments = config.getint('arc_segments', 80)
         self.mesh_area_clearance = config.getfloat('mesh_area_clearance', 5)
-        self.max_probe_horizontal_distance = config.getfloat('max_probe_horizontal_distance', 5)
-        self.max_probe_vertical_distance = config.getfloat('max_probe_vertical_distance', 5)
+        self.max_probe_horizontal_distance = config.getfloat('max_probe_horizontal_distance', 50)
+        self.max_probe_vertical_distance = config.getfloat('max_probe_vertical_distance', 50)
         self.use_relative_reference_index = config.getboolean('use_relative_reference_index', False)
 
         # Enable/Disable boundary detection
@@ -48,6 +48,7 @@ class AdaptiveBedMesh(object):
         self.bed_mesh_config_mesh_min = self.bed_mesh_config.getfloatlist('mesh_min', count=2)
         self.bed_mesh_config_mesh_max = self.bed_mesh_config.getfloatlist('mesh_max', count=2)
         self.bed_mesh_config_fade_end = self.bed_mesh_config.getfloat('fade_end', 0)
+        self.bed_mesh_config_algorithm = self.bed_mesh_config.get('algorithm', 'lagrange').strip().lower()
 
         # Read [virtual_sdcard] section information
         self.virtual_sdcard_config = config.getsection('virtual_sdcard')
@@ -373,17 +374,45 @@ class AdaptiveBedMesh(object):
 
         return mesh_min, mesh_max
 
+    def apply_probe_point_limits(self, num_horizontal_probes, num_vertical_probes):
+        # CHECK 1
+        # Note that a mesh requires a minimum probe_count of 3 along each axis.
+        # Reference: https://www.klipper3d.org/Bed_Mesh.html#basic-configuration
+        num_horizontal_probes = int(max(self.minimum_axis_probe_counts, num_horizontal_probes))
+        num_vertical_probes = int(max(self.minimum_axis_probe_counts, num_vertical_probes))
+
+        # CHECK2
+        # Reference: https://www.klipper3d.org/Bed_Mesh.html#mesh-interpolation
+        # lagrange: Maximum 6 samples per axis
+        if self.bed_mesh_config_algorithm == 'lagrange':
+            num_horizontal_probes = int(min(6, num_horizontal_probes))
+            num_vertical_probes = int(min(6, num_vertical_probes))
+
+        # bicubic: If the minimum count < 4 AND maximum count > 6 then we bump the minimum count to 4
+        elif self.bed_mesh_config_algorithm == 'bicubic':
+            min_probe_cnt = min(num_horizontal_probes, num_vertical_probes)
+            max_probe_cnt = max(num_horizontal_probes, num_vertical_probes)
+            if min_probe_cnt < 4 and max_probe_cnt > 6:
+                num_horizontal_probes = int(max(4, num_horizontal_probes))
+                num_vertical_probes = int(max(4, num_vertical_probes))
+
+        else:
+            raise ValueError("Invalid/unknown bed_mesh algorithm {}".format(self.bed_mesh_config_algorithm))
+
+        return num_horizontal_probes, num_vertical_probes
+
     def get_probe_points(self, mesh_min, mesh_max):
         horizontal_distance = mesh_max[0] - mesh_min[0]
         vertical_distance = mesh_max[1] - mesh_min[1]
 
+        # Generate expected number of points
         num_horizontal_probes = math.ceil(horizontal_distance / self.max_probe_horizontal_distance)
         num_vertical_probes = math.ceil(vertical_distance / self.max_probe_vertical_distance)
 
-        # Make sure there are minimum probes per side
-        num_horizontal_probes = int(max(self.minimum_axis_probe_counts, num_horizontal_probes))
-        num_vertical_probes = int(max(self.minimum_axis_probe_counts, num_vertical_probes))
+        # Apply limits to the number of points subject to the minimum points, as well as algorithm
+        num_horizontal_probes, num_vertical_probes = self.apply_probe_point_limits(num_horizontal_probes, num_vertical_probes)
 
+        # Generate probe coordinates
         horizontal_probe_points = numpy.linspace(mesh_min[0], mesh_max[0], num_horizontal_probes)
         vertical_probe_points = numpy.linspace(mesh_min[1], mesh_max[1], num_vertical_probes)
 

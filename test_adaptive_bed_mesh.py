@@ -10,6 +10,17 @@ test_data_dir = os.path.join(dir_path, 'test_data')
 
 class TestAdaptiveBedMesh(unittest.TestCase):
     def setUp(self) -> None:
+        # Mock mocked_bed_mesh_config
+        self.mocked_bed_mesh_config = mock.MagicMock()
+        self.mocked_bed_mesh_config.getfloatlist.side_effect = self.mocked_getfloatlist
+        self.mocked_bed_mesh_config.getfloat.side_effect = self.mocked_get_float
+        self.mocked_bed_mesh_config.get.side_effect = lambda name, default: default
+
+        # Mock mocked_virtual_sdcard_config
+        self.mocked_virtual_sdcard_config = mock.MagicMock()
+        self.mocked_virtual_sdcard_config.get.return_value = 'my_path'
+
+        # Mock config
         self.mocked_config = mock.MagicMock()
         self.mocked_config.getsection.side_effect = self.mocked_get_section
         self.mocked_config.getfloat.side_effect = self.mocked_get_float
@@ -25,14 +36,9 @@ class TestAdaptiveBedMesh(unittest.TestCase):
 
     def mocked_get_section(self, name):
         if name == 'bed_mesh':
-            mocked_bed_mesh_config = mock.MagicMock()
-            mocked_bed_mesh_config.getfloatlist.side_effect = self.mocked_getfloatlist
-            mocked_bed_mesh_config.getfloat.side_effect = self.mocked_get_float
-            return mocked_bed_mesh_config
+            return self.mocked_bed_mesh_config
         elif name == 'virtual_sdcard':
-            mocked_virtual_sdcard_config = mock.MagicMock()
-            mocked_virtual_sdcard_config.get.return_value = 'my_path'
-            return mocked_virtual_sdcard_config
+            return self.mocked_virtual_sdcard_config
 
         return mock.MagicMock()
 
@@ -128,6 +134,25 @@ class TestAdaptiveBedMesh(unittest.TestCase):
             mesh_min, mesh_max = self.adaptive_bed_mesh.get_layer_min_max_before_fade(layer_vertices, 10)
             self.assertTupleEqual(mesh_min, (23.154, 16.381))
             self.assertTupleEqual(mesh_max, (89.637, 95.344))
+
+    def test_apply_probe_point_limits(self):
+
+        with self.subTest('min_probe_counts'):
+            self.adaptive_bed_mesh.minimum_axis_probe_counts = 4
+            num_probes = self.adaptive_bed_mesh.apply_probe_point_limits(3, 3)
+            self.assertTupleEqual(num_probes, (4, 4))
+
+        with self.subTest('lagrange'):
+            self.adaptive_bed_mesh.minimum_axis_probe_counts = 3
+            self.adaptive_bed_mesh.bed_mesh_config_algorithm = 'lagrange'
+            num_probes = self.adaptive_bed_mesh.apply_probe_point_limits(10, 10)
+            self.assertTupleEqual(num_probes, (6, 6))
+
+        with self.subTest('bicubic'):
+            self.adaptive_bed_mesh.minimum_axis_probe_counts = 3
+            self.adaptive_bed_mesh.bed_mesh_config_algorithm = 'bicubic'
+            num_probes = self.adaptive_bed_mesh.apply_probe_point_limits(8, 3)
+            self.assertTupleEqual(num_probes, (8, 4))
 
 
 if __name__ == '__main__':

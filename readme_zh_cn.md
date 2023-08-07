@@ -72,6 +72,10 @@ GCode分析将在指定层数提前停止。
     #（可选）GCode分析和网床补偿的最高高度
     fade_end: 10
 
+    # (可选) 网格插值算法
+    # 参考链接: https://www.klipper3d.org/Bed_Mesh.html#mesh-interpolation
+    algorithm: bicubic
+
 > **_注意_** ： relative_reference_index现在已弃用。
 
 > **_注意_** ： `zero_reference_position将会被此插件覆盖，因此您不需要在[bed_mesh]制定坐标。

@@ -78,6 +78,10 @@ coordinates are within the safe probing boundaries.
     # (Optional) The Z height in which fade should complete
     fade_end: 10
 
+    # (Optional) The bed mesh interpolation algorithm. 
+    # Reference: https://www.klipper3d.org/Bed_Mesh.html#mesh-interpolation
+    algorithm: bicubic
+
 > **_NOTE:_**  The `relative_reference_index` is now [deprecated](https://www.klipper3d.org/Bed_Mesh.html#the-deprecated-relative_reference_index). 
 
 > **_NOTE:_** The `zero_reference_position` will be overwritten by the plugin so you don't need to configure it from the `[bed_mesh]`
