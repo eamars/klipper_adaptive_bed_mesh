@@ -95,7 +95,7 @@ defined under the Mainsail or Fluidd configuration.
     path: ~/printer_data/gcodes
 
 ## [adaptive_bed_mesh]
-The `[adaptive_bed_mesh]` need to be declared under `printer.cfg`, after the `[exclude_object]` and `[virtual_sdcard]`. 
+The `[adaptive_bed_mesh]` need to be declared under `printer.cfg`, after the `[exclude_object]`,  `[virtual_sdcard]` and `[bed_mesh]`. 
 
     [adaptive_bed_mesh]
     arc_segments: 80                     # (Optional) The number of segments for G2/3 to be decoded into linar motion. 

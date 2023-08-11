@@ -89,7 +89,7 @@ GCode分析将在指定层数提前停止。
 
 
 ## [adaptive_bed_mesh]
-[adaptive_bed_mesh]需要在printer.cfg中的 `[exclude_object]` 和 `[virtual_sdcard]` 之后声明。
+[adaptive_bed_mesh]需要在printer.cfg中的 `[exclude_object]`, `[virtual_sdcard]` 以及 `[bed_mesh]` 之后声明。
 
     [adaptive_bed_mesh]
     arc_segments: 80                     #（可选）G2/3解码为直线运动的细分数量。

@@ -1,3 +1,4 @@
+import configparser
 import numpy
 import math
 from contextlib import contextmanager
@@ -34,9 +35,22 @@ class AdaptiveBedMesh(object):
         # Read klipper objects
         self.printer = config.get_printer()
         self.gcode = self.printer.lookup_object('gcode')
-        self.exclude_object = self.printer.lookup_object('exclude_object')
-        self.print_stats = self.printer.lookup_object('print_stats')
-        self.bed_mesh = self.printer.lookup_object('bed_mesh')
+
+        # Prompt the user for the order of declaration error
+        try:
+            self.exclude_object = self.printer.lookup_object('exclude_object')
+        except configparser.Error:
+            raise configparser.Error("[adaptive_bed_mesh] need to be declared after [exclude_object]")
+
+        try:
+            self.print_stats = self.printer.lookup_object('print_stats')
+        except configparser.Error:
+            raise configparser.Error("[adaptive_bed_mesh] need to be declared after [print_stats]")
+
+        try:
+            self.bed_mesh = self.printer.lookup_object('bed_mesh')
+        except configparser.Error:
+            raise configparser.Error("[adaptive_bed_mesh] need to be declared after [bed_mesh]")
 
         # Register commands
         self.gcode.register_command('ADAPTIVE_BED_MESH_CALIBRATE',
